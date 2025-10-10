@@ -276,18 +276,16 @@ public class PerfCommand implements SimpleCommand {
                 source.sendMessage(Component.text(""));
                 source.sendMessage(Component.text("📥 下載速度: ", NamedTextColor.AQUA)
                     .append(Component.text(result.downloadSpeed + " Mbps", NamedTextColor.GREEN)));
-
-                // 只有當上傳速度不是 N/A 時才顯示
-                if (!"N/A".equals(result.uploadSpeed)) {
+                if ("N/A".equals(result.uploadSpeed)) {
                     source.sendMessage(Component.text("📤 上傳速度: ", NamedTextColor.AQUA)
-                        .append(Component.text(result.uploadSpeed + " Mbps", NamedTextColor.GREEN)));
+                        .append(Component.text(result.uploadSpeed, NamedTextColor.YELLOW)));
                 } else {
                     source.sendMessage(Component.text("📤 上傳速度: ", NamedTextColor.AQUA)
-                        .append(Component.text("無法測試", NamedTextColor.YELLOW)));
+                        .append(Component.text(result.uploadSpeed + " Mbps", NamedTextColor.GREEN)));
                 }
-
                 source.sendMessage(Component.text("📶 延遲 (Ping): ", NamedTextColor.AQUA)
                     .append(Component.text(result.latency + " ms", NamedTextColor.GREEN)));
+
                 source.sendMessage(Component.text(""));
                 source.sendMessage(Component.text("🌐 測試伺服器: ", NamedTextColor.AQUA)
                     .append(Component.text(result.testFile, NamedTextColor.GRAY)));
