@@ -24,7 +24,7 @@ public class NetworkTester {
 
     // 測速伺服器列表
     private static final TestServer[] TEST_SERVERS = {
-        new TestServer("Cloudflare DNS", "https://1.1.1.1"), // 使用 1.1.1.1 測試
+        new TestServer("Cloudflare", "https://cloudflare.com"), // Cloudflare 官網（全球可達）
         new TestServer("CacheFly CDN", "http://cachefly.cachefly.net/50mb.test"),
         new TestServer("Tele2 Speedtest", "http://speedtest.tele2.net/100MB.zip"),
         new TestServer("Cloudflare Speed", "https://speed.cloudflare.com/__down?bytes=50000000")
@@ -42,6 +42,9 @@ public class NetworkTester {
 
     public NetworkResult testSpeed() throws Exception {
         NetworkResult result = new NetworkResult();
+
+        // 獲取對外 IP
+        result.publicIP = getPublicIP();
 
         // 尋找 ping 最低的伺服器
         TestServer bestServer = findBestServer();
@@ -216,6 +219,42 @@ public class NetworkTester {
     }
 
     /**
+     * 獲取主機對外 IP
+     */
+    private String getPublicIP() {
+        String[] ipServices = {
+            "https://api.ipify.org",
+            "https://icanhazip.com",
+            "https://ifconfig.me/ip"
+        };
+
+        for (String service : ipServices) {
+            try {
+                URL url = new URL(service);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setConnectTimeout(5000);
+                conn.setReadTimeout(5000);
+
+                java.io.BufferedReader reader = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(conn.getInputStream())
+                );
+                String ip = reader.readLine().trim();
+                reader.close();
+                conn.disconnect();
+
+                if (ip != null && !ip.isEmpty()) {
+                    return ip;
+                }
+            } catch (Exception e) {
+                // 嘗試下一個服務
+            }
+        }
+
+        return "無法獲取";
+    }
+
+    /**
      * Ping 測試（HTTP/HTTPS HEAD 請求）
      */
     private long pingServer(String urlString) throws Exception {
@@ -248,6 +287,7 @@ public class NetworkTester {
 }
 
 class NetworkResult {
+    String publicIP = "N/A";
     String downloadSpeed = "N/A";
     String uploadSpeed = "N/A";
     String latency = "N/A";

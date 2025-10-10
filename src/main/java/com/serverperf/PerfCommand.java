@@ -274,6 +274,8 @@ public class PerfCommand implements SimpleCommand {
 
                 source.sendMessage(Component.text("✓ 測試完成！(耗時: " + duration + " 秒)", NamedTextColor.GREEN));
                 source.sendMessage(Component.text(""));
+                source.sendMessage(Component.text("🌍 對外 IP: ", NamedTextColor.AQUA)
+                    .append(Component.text(result.publicIP, NamedTextColor.WHITE)));
                 source.sendMessage(Component.text("📥 下載速度: ", NamedTextColor.AQUA)
                     .append(Component.text(result.downloadSpeed + " Mbps", NamedTextColor.GREEN)));
                 // 上傳速度顯示
