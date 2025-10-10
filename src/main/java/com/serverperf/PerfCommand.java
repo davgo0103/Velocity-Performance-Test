@@ -276,7 +276,8 @@ public class PerfCommand implements SimpleCommand {
                 source.sendMessage(Component.text(""));
                 source.sendMessage(Component.text("📥 下載速度: ", NamedTextColor.AQUA)
                     .append(Component.text(result.downloadSpeed + " Mbps", NamedTextColor.GREEN)));
-                if ("N/A".equals(result.uploadSpeed)) {
+                // 上傳速度顯示
+                if (result.uploadSpeed.contains("N/A")) {
                     source.sendMessage(Component.text("📤 上傳速度: ", NamedTextColor.AQUA)
                         .append(Component.text(result.uploadSpeed, NamedTextColor.YELLOW)));
                 } else {
