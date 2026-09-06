@@ -1,116 +1,106 @@
 # Velocity Performance Test Plugin
 
-一個用於 Velocity Proxy 的性能測試插件，可以檢測主機規格、網路速度以及後端伺服器狀態。
+一個用於 Velocity Proxy 的效能測試插件，可檢測主機規格、網路速度以及後端伺服器狀態。
 
 ## 功能特點
 
-- ✅ **主機規格檢測** - CPU 型號、核心數、記憶體使用率、儲存空間、作業系統資訊
-- ✅ **網路速度測試** - 純 Java 實現，測試下載/上傳速度、延遲
-- ✅ **自動選擇最佳節點** - 根據延遲自動選擇最近的測速伺服器
-- ✅ **完整測速** - 下載 50MB 檔案 + 上傳 50MB 數據
-- ✅ **對外 IP 顯示** - 自動偵測並顯示主機的公網 IP 位址
-- ✅ **後端伺服器狀態** - 顯示所有後端伺服器的線上狀態和玩家數量
-- ✅ **完整報告** - 一鍵查看所有性能資訊
-- ✅ **無需外部工具** - 純 Java 實現，遠端主機也能使用
+- **主機規格檢測** — CPU 型號與核心數、系統／行程 CPU 負載、JVM 堆積、系統實體記憶體、磁碟空間、JVM 執行時間
+- **網路測速** — 純 Java 實作，自動從多個節點中挑選延遲最低者，量測下載／上傳／延遲／抖動
+- **失效節點自動跳過** — 節點若回傳錯誤頁或資料量異常，會自動改用下一個節點
+- **對外 IP 偵測** — 依序嘗試多個查詢服務
+- **後端伺服器狀態** — 平行 ping 所有後端，顯示線上狀態、玩家數、版本與回應時間
+- **結果快取與流量保護** — 同時間只會有一次測速，短期內重複查詢直接回傳快取
+- **可設定** — 測速節點、資料量、逾時等皆可在 `config.toml` 調整，無需重新編譯
 
 ## 系統需求
 
-- Velocity 3.3.0 或更高版本
-- Java 21 或更高版本
+- Velocity **4.1.1** 或更高版本
+- Java **25** 或更高版本
 
-## 安裝方式
+## 編譯
 
-### 使用 Maven 編譯
+專案內含 Maven Wrapper，不需要預先安裝 Maven：
 
 ```bash
-mvn clean package
+./mvnw clean package        # Linux / macOS
+.\mvnw.cmd clean package    # Windows
 ```
 
-編譯後的 JAR 檔案會在 `target/` 資料夾中。
+產物為 `target/VelocityPerformanceTest-2.0.0.jar`。
 
-### 安裝到 Velocity
+## 安裝
 
-將編譯好的 JAR 檔案放入 Velocity 伺服器的 `plugins/` 資料夾，然後重啟伺服器。
+將 JAR 放入 Velocity 的 `plugins/` 資料夾後重啟。首次啟動會在
+`plugins/velocityperf/config.toml` 產生預設設定檔。
 
-## 使用方法
+## 指令
 
-### 指令列表
+| 指令 | 說明 | 權限 |
+|------|------|------|
+| `/vperf` | 顯示說明 | `velocityperf.use` |
+| `/vperf specs` | Proxy 主機規格 | `velocityperf.use` |
+| `/vperf network` | 網路測速 | `velocityperf.use` |
+| `/vperf servers` | 後端伺服器狀態 | `velocityperf.use` |
+| `/vperf all` | 完整報告 | `velocityperf.use` |
+| `/vperf reload` | 重新載入設定 | `velocityperf.admin` |
 
-| 指令 | 說明 |
-|------|------|
-| `/vperf specs` | 顯示 Proxy 主機規格 |
-| `/vperf network` | 測試網路速度 |
-| `/vperf servers` | 顯示後端伺服器狀態 |
-| `/vperf all` | 執行完整測試 |
+別名：`/vp`、`/serverperf`
 
-### 權限設定
+主控台預設擁有全部權限。玩家請透過 LuckPerms 等權限插件授予
+`velocityperf.use`（以及管理者的 `velocityperf.admin`）。
 
-```
-velocityperf.use - 允許使用所有 /vperf 指令
-```
+## 設定檔
 
-在 `velocity.toml` 中配置權限，或使用權限插件（如 LuckPerms）管理。
+`plugins/velocityperf/config.toml`：
 
-## 使用範例
+```toml
+[network]
+download-mib = 50               # 下載測試資料量
+upload-mib = 25                 # 上傳測試資料量（0 = 停用）
+upload-url = "https://speed.cloudflare.com/__up"
+ping-samples = 5                # 延遲取樣次數（用於計算 jitter）
+connect-timeout-seconds = 5
+request-timeout-seconds = 30
+transfer-budget-seconds = 20    # 單次傳輸的時間上限
+result-cache-seconds = 60       # 測速結果快取時間
+command-cooldown-seconds = 10   # 每位玩家的指令冷卻
+public-ip-services = [ "https://api.ipify.org", ... ]
 
-### 檢查主機規格
-```
-/vperf specs
-```
-
-顯示資訊：
-- CPU 型號和核心數
-- 記憶體使用情況（JVM + 系統總記憶體）
-- 儲存空間使用狀況
-- 作業系統版本
-- Java 版本
-- 目前線上玩家數
-- 後端伺服器數量
-
-### 測試網路速度
-```
-/vperf network
-```
-
-測試項目：
-- **對外 IP** - 顯示主機的公網 IP 位址
-- **下載速度** (Mbps) - 從選定的測速伺服器下載 50MB 檔案
-- **上傳速度** (Mbps) - 上傳 50MB 隨機數據到 Tele2 Speedtest
-- **延遲** (ms) - HTTP HEAD 請求測試
-
-**測速節點：**
-- 自動選擇延遲最低的伺服器進行下載測試（Cloudflare、CacheFly CDN、Tele2、Cloudflare Speed）
-- 上傳：Tele2 Speedtest (HTTP PUT 方法，全球可達)
-
-### 檢查後端伺服器
-```
-/vperf servers
+[[network.download-targets]]
+name = "Cloudflare"
+url = "https://speed.cloudflare.com/__down?bytes={bytes}"
 ```
 
-顯示資訊：
-- 伺服器名稱
-- 線上/離線狀態
-- 玩家數量
-- 伺服器版本
+節點 URL 中的 `{bytes}` 會被替換成實際要求的位元組數。測試會平行量測所有節點的
+延遲，再依延遲由低到高依序嘗試下載，直到成功為止。
 
-### 完整測試
-```
-/vperf all
-```
+## 流量說明
 
-執行所有測試並顯示完整報告。
+一次完整測速預設會消耗約 **75 MiB**（下載 50 + 上傳 25）。以下機制可避免濫用：
 
-## 注意事項
+- **結果快取** — `result-cache-seconds` 內重複查詢直接回傳上次結果
+- **單次併發** — 同時只允許一次測速，後到的請求共用同一份結果
+- **指令冷卻** — 每位玩家受 `command-cooldown-seconds` 限制
 
-
-### 適用場景
-- 監控 Proxy 伺服器性能
-- 診斷網路問題
-- 檢查後端伺服器狀態
-- 向玩家展示伺服器規格
-- 測試伺服器上傳/下載速度
+若要降低流量，可調小 `download-mib` / `upload-mib`，或把 `upload-mib` 設為 0。
 
 ## 開發資訊
 
-- **作者**: shi0103
-- **版本**: 1.0.0
+- **作者**：shi0103
+- **版本**：2.0.0
+- **技術棧**：Java 25、Velocity API 4.1.1、Adventure 5（MiniMessage）、Brigadier、JUnit 6
+
+### 架構
+
+| 檔案 | 職責 |
+|------|------|
+| `VelocityPerfPlugin` | 插件進入點、生命週期、指令註冊 |
+| `PerfConfig` | 設定檔載入與驗證（不可變 record） |
+| `PerfService` | 執行緒模型、單次併發限制、結果快取 |
+| `SystemProbe` | 主機與 JVM 規格擷取 |
+| `NetworkTester` | HTTP 測速（下載／上傳／延遲） |
+| `PerfCommand` | Brigadier 指令樹與 MiniMessage 版面 |
+| `Format` | 顯示層格式化 |
+
+量測層一律回傳型別化數值（`OptionalDouble`、`OptionalLong`…），字串只在 `Format`
+與 `PerfCommand` 產生，因此「量測失敗」與「數值為 0」不會被混為一談。

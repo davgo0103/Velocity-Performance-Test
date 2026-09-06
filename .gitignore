@@ -1,9 +1,19 @@
-# Ignore Maven target directory
+# Maven
 target/
 
-# Optional: common IDE and OS files
+# Gradle（本專案不使用，僅避免誤入）
+build/
+.gradle/
+
+# IDE
 .idea/
 *.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# 編譯產物與系統檔
 *.class
 .DS_Store
 Thumbs.db

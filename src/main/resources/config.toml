@@ -1,0 +1,68 @@
+# ============================================================
+#  Velocity Performance Test - 設定檔
+#  修改後重啟 Proxy 或執行 /vperf reload 生效。
+# ============================================================
+
+[network]
+
+# 下載測試要抓取的資料量（MiB）。測試會在達到此量或超過 transfer-budget-seconds 時停止。
+download-mib = 50
+
+# 上傳測試要送出的資料量（MiB）。設為 0 可停用上傳測試。
+upload-mib = 25
+
+# 上傳端點。留空字串可停用上傳測試。
+upload-url = "https://speed.cloudflare.com/__up"
+
+# 延遲取樣次數，用於計算平均延遲與抖動（jitter）。
+ping-samples = 5
+
+# 連線 / 單一請求 / 單次傳輸的時間上限（秒）。
+connect-timeout-seconds = 5
+request-timeout-seconds = 30
+transfer-budget-seconds = 20
+
+# 測速結果的快取時間（秒）。此期間內重複執行 /vperf network 會直接回傳上次結果，
+# 避免重複消耗頻寬。
+result-cache-seconds = 60
+
+# 每位使用者兩次指令之間的最短間隔（秒）。
+command-cooldown-seconds = 10
+
+# 對外 IP 查詢服務，依序嘗試直到成功。
+public-ip-services = [
+    "https://api.ipify.org",
+    "https://icanhazip.com",
+    "https://ifconfig.me/ip",
+]
+
+# ------------------------------------------------------------
+# 下載測速節點。啟動測試時會平行量測所有節點的延遲，並依延遲由低到高
+# 依序嘗試，直到有一個成功為止。
+#
+# URL 中的 {bytes} 會被替換成實際要求的位元組數（僅部分端點支援）。
+#
+# 節點若回傳 text/* 或遠少於要求的資料量，會被判定為失效並自動跳過——
+# 這類「HTTP 200 但內容是錯誤頁」的失效節點相當常見。
+# ------------------------------------------------------------
+
+# Cloudflare 支援指定下載位元組數，是最精確也最穩定的選擇，建議保留在第一位。
+[[network.download-targets]]
+name = "Cloudflare"
+url = "https://speed.cloudflare.com/__down?bytes={bytes}"
+
+[[network.download-targets]]
+name = "Hetzner (Ashburn, US)"
+url = "https://ash-speed.hetzner.com/100MB.bin"
+
+[[network.download-targets]]
+name = "Hetzner (Falkenstein, DE)"
+url = "https://fsn1-speed.hetzner.com/100MB.bin"
+
+[[network.download-targets]]
+name = "Hetzner (Helsinki, FI)"
+url = "https://hel1-speed.hetzner.com/100MB.bin"
+
+[[network.download-targets]]
+name = "Tele2 (Stockholm, SE)"
+url = "http://speedtest.tele2.net/100MB.zip"
