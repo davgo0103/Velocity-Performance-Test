@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalDouble;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import net.kyori.adventure.text.Component;
@@ -237,14 +238,13 @@ final class PerfCommand {
         }
 
         panel.section("頻寬");
-        panel.row("下載", Format.mbps(result.downloadMbps())
-                + (result.downloadedBytes() > 0 ? "  (%s)".formatted(Format.bytes(result.downloadedBytes())) : ""));
+        panel.row("下載", bandwidth(result.downloadMbps(), result.downloadedBytes()));
         if (service.config().uploadEnabled()) {
-            panel.row("上傳", Format.mbps(result.uploadMbps())
-                    + (result.uploadedBytes() > 0 ? "  (%s)".formatted(Format.bytes(result.uploadedBytes())) : ""));
+            panel.row("上傳", bandwidth(result.uploadMbps(), result.uploadedBytes()));
         } else {
             panel.row("上傳", "已於設定中停用");
         }
+        panel.row("並行連線", Format.count(result.streams(), "條"));
 
         panel.section("延遲");
         result.latency().ifPresentOrElse(latency -> {
@@ -259,6 +259,11 @@ final class PerfCommand {
                 Format.duration(Duration.between(result.takenAt(), Instant.now())) + "前");
 
         return panel.rule().build();
+    }
+
+    /** 速率後面附上實際傳輸量；速率本身已排除 TTFB 與慢啟動，兩者不會互相整除。 */
+    private static String bandwidth(OptionalDouble mbps, long bytes) {
+        return Format.mbps(mbps) + (bytes > 0 ? "  (%s)".formatted(Format.bytes(bytes)) : "");
     }
 
     private Component serversPanel(List<PerfService.ServerStatus> statuses) {

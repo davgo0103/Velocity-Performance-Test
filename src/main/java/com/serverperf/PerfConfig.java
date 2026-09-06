@@ -25,6 +25,8 @@ record PerfConfig(
         Duration requestTimeout,
         Duration transferBudget,
         int pingSamples,
+        int parallelStreams,
+        Duration warmup,
         Duration resultCacheTtl,
         Duration commandCooldown) {
 
@@ -57,6 +59,12 @@ record PerfConfig(
         }
         if (pingSamples < 1) {
             throw new IllegalArgumentException("ping-samples 至少為 1");
+        }
+        if (parallelStreams < 1) {
+            throw new IllegalArgumentException("parallel-streams 至少為 1");
+        }
+        if (warmup.isNegative()) {
+            throw new IllegalArgumentException("warmup-millis 不可為負數");
         }
     }
 
@@ -133,6 +141,9 @@ record PerfConfig(
                 seconds(net, "request-timeout-seconds", 30),
                 seconds(net, "transfer-budget-seconds", 20),
                 Math.toIntExact(net.getLong("ping-samples", 5L)),
+                // 上限 16：再多只會讓彼此爭搶頻寬，卻多開一堆連線。
+                (int) Math.clamp(net.getLong("parallel-streams", 4L), 1L, 16L),
+                millis(net, "warmup-millis", 1_000),
                 seconds(net, "result-cache-seconds", 60),
                 seconds(net, "command-cooldown-seconds", 10));
     }
@@ -147,6 +158,10 @@ record PerfConfig(
 
     private static long mib(Toml toml, String key, long fallbackMib) {
         return Math.max(0L, toml.getLong(key, fallbackMib)) * 1024L * 1024L;
+    }
+
+    private static Duration millis(Toml toml, String key, long fallback) {
+        return Duration.ofMillis(Math.max(0L, toml.getLong(key, fallback)));
     }
 
     private static Duration seconds(Toml toml, String key, long fallback) {

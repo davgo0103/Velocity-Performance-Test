@@ -22,6 +22,8 @@ class PerfConfigTest {
         assertTrue(config.downloadBytes() > 0);
         assertTrue(config.uploadEnabled());
         assertTrue(config.pingSamples() >= 1);
+        assertTrue(config.parallelStreams() >= 1);
+        assertFalse(config.warmup().isNegative());
         assertFalse(config.publicIpServices().isEmpty());
     }
 
@@ -67,6 +69,41 @@ class PerfConfigTest {
         assertEquals(Duration.ofSeconds(5), config.connectTimeout());
         assertEquals(List.of(), config.publicIpServices());
         assertEquals(1, config.downloadTargets().size());
+        assertEquals(4, config.parallelStreams());
+        assertEquals(Duration.ofMillis(1_000), config.warmup());
+    }
+
+    @Test
+    @DisplayName("parallel-streams 會被夾在 1..16，避免無意義的連線數")
+    void parallelStreamsAreClamped() {
+        String base = """
+                [network]
+                parallel-streams = %d
+
+                [[network.download-targets]]
+                name = "Only"
+                url = "https://example.invalid/file.bin"
+                """;
+
+        assertEquals(1, PerfConfig.parse(new Toml().read(base.formatted(0))).parallelStreams());
+        assertEquals(1, PerfConfig.parse(new Toml().read(base.formatted(-5))).parallelStreams());
+        assertEquals(8, PerfConfig.parse(new Toml().read(base.formatted(8))).parallelStreams());
+        assertEquals(16, PerfConfig.parse(new Toml().read(base.formatted(999))).parallelStreams());
+    }
+
+    @Test
+    @DisplayName("warmup-millis = 0 是合法的（等於停用暖機期排除）")
+    void warmupCanBeDisabled() {
+        PerfConfig config = PerfConfig.parse(new Toml().read("""
+                [network]
+                warmup-millis = 0
+
+                [[network.download-targets]]
+                name = "Only"
+                url = "https://example.invalid/file.bin"
+                """));
+
+        assertEquals(Duration.ZERO, config.warmup());
     }
 
     @Test
